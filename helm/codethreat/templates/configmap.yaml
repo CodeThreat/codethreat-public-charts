@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "codethreat.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.labels" . | nindent 4 }}
+data:
+  INSTANCE_ID: {{ .Values.config.instanceId | quote }}
+  APP_URL: {{ .Values.config.appUrl | quote }}
+  DEPLOYMENT_TYPE: {{ .Values.config.deploymentType | quote }}
+  NEXT_PUBLIC_DEPLOYMENT_TYPE: {{ .Values.config.nextPublicDeploymentType | quote }}
+  NEXT_PUBLIC_APP_URL: {{ .Values.config.nextPublicAppUrl | quote }}
+  NEXT_PUBLIC_API_URL: {{ .Values.config.nextPublicApiUrl | quote }}
+  NEXT_PUBLIC_AUTH_ALLOW_SIGNUP: {{ .Values.config.nextPublicAuthAllowSignup | quote }}
+  NEXT_PUBLIC_AUTH_ALLOW_CREDENTIALS: {{ .Values.config.nextPublicAuthAllowCredentials | quote }}
+  NEXT_PUBLIC_AUTH_ALLOW_GITHUB: {{ .Values.config.nextPublicAuthAllowGithub | quote }}
+  NEXT_PUBLIC_AUTH_ALLOW_GITLAB: {{ .Values.config.nextPublicAuthAllowGitlab | quote }}
+  NEXT_PUBLIC_AUTH_ALLOW_BITBUCKET: {{ .Values.config.nextPublicAuthAllowBitbucket | quote }}
+  NEXT_PUBLIC_GITHUB_CLIENT_ID: {{ .Values.config.nextPublicGithubClientId | quote }}
+  NEXT_PUBLIC_GITHUB_APP_NAME: {{ .Values.config.nextPublicGithubAppName | quote }}
+  NEXT_PUBLIC_AZURE: {{ .Values.config.nextPublicAzure | quote }}
+  NEXT_PUBLIC_FILE_UPLOAD: {{ .Values.config.nextPublicFileUpload | quote }}
+  NEXT_PUBLIC_ENABLE_JIRA: {{ .Values.config.nextPublicEnableJira | quote }}
+  NEXT_PUBLIC_ANNOUNCEMENT_ENABLED: {{ .Values.config.nextPublicAnnouncementEnabled | quote }}
+  NEXT_PUBLIC_ANNOUNCEMENT_TEXT: {{ .Values.config.nextPublicAnnouncementText | quote }}
+  NEXT_PUBLIC_ANNOUNCEMENT_STYLE: {{ .Values.config.nextPublicAnnouncementStyle | quote }}
+  DB_PROVIDER: {{ .Values.config.dbProvider | quote }}
+  SHIFTQL_HOST: {{ .Values.config.shiftqlHost | quote }}
+  SHIFTQL_PORT: {{ .Values.config.shiftqlPort | quote }}
+  SHIFTQL_WORKERS: {{ .Values.config.shiftqlWorkers | quote }}
+  AGENT_BATCH_SIZE: {{ .Values.config.agentBatchSize | quote }}
+  AGENT_SCAN_TIMEOUT: {{ .Values.config.agentScanTimeout | quote }}
+  WORKER_MAX_SCANS_PER_WORKER: {{ .Values.config.workerMaxScansPerWorker | quote }}
+  PLUGIN_TOOLS_DIR: {{ .Values.config.pluginToolsDir | quote }}
+  PLUGIN_CACHE_DIR: {{ .Values.config.pluginCacheDir | quote }}
+  CODETHREAT_PLUGIN_DIR: {{ .Values.config.codethreatPluginDir | quote }}
+  HIVE_MAX_CONCURRENT_JOBS: {{ .Values.config.hiveMaxConcurrentJobs | quote }}
+  MAX_TOKENS_PER_JOB: {{ .Values.config.maxTokensPerJob | quote }}
+  WORKER_HEARTBEAT_INTERVAL: {{ .Values.config.workerHeartbeatInterval | quote }}
+  WORKER_STALE_TIMEOUT: {{ .Values.config.workerStaleTimeout | quote }}
+  HIVE_CACHE_DIR: {{ .Values.config.hiveCacheDir | quote }}
+  PYTHONPATH: {{ .Values.config.pythonpath | quote }}
+  PYTHONUNBUFFERED: {{ .Values.config.pythonunbuffered | quote }}
+  EMAIL_PROVIDER: {{ .Values.config.emailProvider | quote }}
+  SMTP_HOST: {{ .Values.config.smtpHost | quote }}
+  SMTP_PORT: {{ .Values.config.smtpPort | quote }}
+  SMTP_USER: {{ .Values.config.smtpUser | quote }}
+  SMTP_FROM: {{ .Values.config.smtpFrom | quote }}
+  SMTP_FROM_NAME: {{ .Values.config.smtpFromName | quote }}
+  SMTP_TLS: {{ .Values.config.smtpTls | quote }}
+  SMTP_REJECT_UNAUTHORIZED: {{ .Values.config.smtpRejectUnauthorized | quote }}
+  SMTP_CIPHERS: {{ .Values.config.smtpCiphers | quote }}
+  CONTAINER_RUNTIME_ENV_REPLACEMENT: {{ .Values.config.containerRuntimeEnvReplacement | quote }}
+  NODE_TLS_REJECT_UNAUTHORIZED: {{ .Values.config.nodeTlsRejectUnauthorized | quote }}
+  NODE_USE_ENV_PROXY: {{ .Values.config.nodeUseEnvProxy | quote }}
+  HTTP_PROXY: {{ .Values.config.httpProxy | quote }}
+  HTTPS_PROXY: {{ .Values.config.httpsProxy | quote }}
+  http_proxy: {{ .Values.config.http_proxy | quote }}
+  https_proxy: {{ .Values.config.https_proxy | quote }}
+  NO_PROXY: {{ .Values.config.noProxy | quote }}
+  no_proxy: {{ .Values.config.no_proxy | quote }}
+  POSTHOG_OPT_OUT: {{ .Values.config.posthogOptOut | quote }}
+  UPLOAD_FILE_PATH: {{ .Values.config.uploadFilePath | quote }}
+  BITBUCKET_SERVER_WEBHOOK_SECRET: {{ .Values.config.bitbucketServerWebhookSecret | quote }}
+  DEFAULT_MODEL: {{ .Values.config.defaultModel | quote }}
+  HIVE_MODEL_NAME: {{ .Values.config.hiveModelName | quote }}
+  HIVE_WEAK_MODEL: {{ .Values.config.hiveWeakModel | quote }}
+  HIVE_OLLAMA_NUM_CTX: {{ .Values.config.hiveOllamaNumCtx | quote }}

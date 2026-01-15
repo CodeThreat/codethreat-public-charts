@@ -1,0 +1,17 @@
+apiVersion: v2
+name: codethreat
+description: CodeThreat AppSec Platform - Enterprise Kubernetes deployment
+type: application
+version: 0.68.0
+appVersion: "latest"
+keywords:
+  - security
+  - appsec
+  - code-analysis
+  - sast
+home: https://codethreat.com
+sources:
+  - https://github.com/codethreat/codethreat-appsec
+maintainers:
+  - name: CodeThreat Team
+    email: info@codethreat.com

@@ -1,0 +1,238 @@
+# Global configuration
+global:
+  namespace: codethreat  # Kubernetes namespace for all resources
+  imageRegistry: registry.codethreat.com  # Container registry base URL
+  imagePullPolicy: IfNotPresent  # Image pull policy: IfNotPresent (production) or Always (testing)
+
+# Image pull secret configuration for private registry authentication
+# Required: Set token via --set imagePullSecrets.token="$CODETHREAT_TOKEN" during install/upgrade
+imagePullSecrets:
+  name: codethreat-registry  # Kubernetes Secret name for registry credentials
+  token: ""  # CodeThreat registry token (DO NOT set in values.yaml, use --set flag)
+
+postgresql:
+  enabled: true
+  image:
+    repository: library/postgres
+    tag: "15-alpine"
+  database: codethreat
+  username: codethreat
+  password: codethreat_default_pass
+  storage:
+    size: 20Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+
+appsec:
+  enabled: true
+  image:
+    repository: codethreat/codethreat-appsec-poc
+    tag: latest
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 4
+      memory: 8Gi
+  uploads:
+    storage:
+      size: 10Gi
+      storageClass: ""  # Empty = use default storage class (persistent), set to "-" to use emptyDir (ephemeral)
+
+shiftql:
+  enabled: true
+  image:
+    repository: codethreat/codethreat-shift-ql-poc
+    tag: latest
+  replicas: 2
+  maxReplicas: 10
+  resources:
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 8
+      memory: 16Gi
+  scanCache:
+    storage:
+      size: 50Gi
+      storageClass: ""  # Empty = use default storage class (persistent), set to "-" to use emptyDir (ephemeral)
+  scanTemp:
+    storage:
+      size: 20Gi
+      storageClass: ""  # Empty = use default storage class (persistent), set to "-" to use emptyDir (ephemeral)
+
+hive:
+  enabled: true
+  image:
+    repository: codethreat/codethreat-hive-poc
+    tag: latest
+  replicas: 2
+  maxReplicas: 10
+  resources:
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 8
+      memory: 16Gi
+  cache:
+    storage:
+      size: 30Gi
+      storageClass: ""  # Empty = use default storage class (persistent), set to "-" to use emptyDir (ephemeral)
+
+ingress:
+  enabled: false  # Set to true if you have an ingress controller installed
+  className: nginx
+  host: codethreat.example.com
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+  tls:
+    enabled: false
+    secretName: ""
+
+# Sensitive configuration values (stored in Kubernetes Secrets)
+secrets:
+  # Authentication secrets (generate with: openssl rand -base64 32)
+  nextauthSecret: ""  # NextAuth.js secret for session encryption (required)
+  encryptionKey: ""  # 32-character encryption key for data encryption (required)
+  credentialEncryptionKey: ""  # 32-character encryption key for credential encryption (required)
+  shiftqlApiSecret: ""  # Shift-QL API authentication secret (required)
+  
+  # Database credentials
+  postgresPassword: codethreat_default_pass  # PostgreSQL password (change in production)
+  
+  # GitHub integration
+  githubClientId: ""  # GitHub OAuth App Client ID
+  githubClientSecret: ""  # GitHub OAuth App Client Secret
+  githubAppId: ""  # GitHub App ID
+  githubAppPrivateKey: ""  # GitHub App Private Key (PEM format, newline-escaped)
+  githubAppWebhookSecret: ""  # GitHub App webhook secret (generate with: openssl rand -base64 32)
+  #githubToken: ""  # GitHub Personal Access Token (optional, for PAT-based connections)
+  
+  # AI Provider API Keys
+  #openaiApiKey: ""  # OpenAI API key
+  #openaiBaseUrl: ""  # OpenAI API base URL (optional, for custom endpoints)
+  #azureApiBase: ""  # Azure OpenAI API base URL
+  #azureApiVersion: ""  # Azure OpenAI API version
+  #azureApiKey: ""  # Azure OpenAI API key
+  #ollamaApiBase: ""  # Ollama API base URL (e.g., http://ollama:11434)
+  #ollamaApiKey: ""  # Ollama API key (if required)
+  #groqApiKey: ""  # Groq API key
+  #anthropicApiKey: ""  # Anthropic Claude API key
+  geminiApiKey: ""  # Google Gemini API key
+  #litellmApiBase: ""  # LiteLLM API base URL
+  #litellmApiKey: ""  # LiteLLM API key
+  #litellmProvider: ""  # LiteLLM provider name
+  #litellmModel: ""  # LiteLLM model name
+  
+  # Email service credentials
+  smtpPassword: ""  # SMTP password
+  sendgridApiKey: ""  # SendGrid API key
+  mailchimpApiKey: ""  # Mailchimp API key
+
+# Application configuration (stored in Kubernetes ConfigMap)
+config:
+  # Instance and deployment configuration
+  instanceId: ""  # Unique instance identifier
+  appUrl: "https://codethreat.example.com"  # Full application URL (required)
+  nextauthUrl: "https://codethreat.example.com"  # NextAuth.js callback URL (should match appUrl)
+  deploymentType: "onprem"  # Deployment type: onprem, cloud, or saas
+  
+  # Next.js public environment variables (baked at build time)
+  nextPublicDeploymentType: "onprem"  # Public deployment type
+  nextPublicAppUrl: "https://codethreat.example.com"  # Public application URL
+  nextPublicApiUrl: "https://codethreat.example.com"  # Public API URL
+  nextPublicAuthAllowSignup: "true"  # Allow user signup
+  nextPublicAuthAllowCredentials: "true"  # Allow credentials-based login
+  nextPublicAuthAllowGithub: "false"  # Enable GitHub OAuth login
+  nextPublicAuthAllowGitlab: "false"  # Enable GitLab OAuth login
+  nextPublicAuthAllowBitbucket: "false"  # Enable Bitbucket OAuth login
+  nextPublicGithubClientId: ""  # GitHub OAuth Client ID (public)
+  nextPublicGithubAppName: "codethreat-appsec-agent"  # GitHub App name
+  nextPublicAzure: "false"  # Enable Azure AD integration
+  nextPublicFileUpload: "false"  # Enable file upload feature
+  nextPublicEnableJira: "true"  # Enable Jira integration
+  nextPublicAnnouncementEnabled: "false"  # Show announcement banner
+  nextPublicAnnouncementText: ""  # Announcement text
+  nextPublicAnnouncementStyle: "info"  # Announcement style: info, warning, error
+  
+  # Database configuration
+  dbProvider: "postgresql"  # Database provider
+  
+  # Shift-QL scanner configuration
+  shiftqlHost: "0.0.0.0"  # Shift-QL bind address
+  shiftqlPort: "8000"  # Shift-QL service port
+  shiftqlWorkers: "2"  # Number of Shift-QL worker processes
+  agentBatchSize: "1"  # Batch size for agent operations
+  agentScanTimeout: "3600"  # Scan timeout in seconds
+  workerMaxScansPerWorker: "1"  # Maximum scans per worker
+  pluginToolsDir: "/app/tools"  # Plugin tools directory
+  pluginCacheDir: "/tmp/plugin-cache"  # Plugin cache directory
+  codethreatPluginDir: "/tmp/plugins"  # CodeThreat plugins directory
+  
+  # Hive AI worker configuration
+  hiveMaxConcurrentJobs: "1"  # Maximum concurrent AI analysis jobs
+  maxTokensPerJob: "1000000"  # Maximum tokens per AI job
+  workerHeartbeatInterval: "30"  # Worker heartbeat interval (seconds)
+  workerStaleTimeout: "300"  # Worker stale timeout (seconds)
+  hiveCacheDir: "/tmp/hive-cache"  # Hive AI cache directory
+  
+  # AI Model configuration
+  defaultModel: "gemini/gemini-2.5-flash-lite"  # Default AI model for analysis (e.g., gemini/gemini-2.5-flash-lite, openai/gpt-4)
+  hiveModelName: "gemini/gemini-2.5-flash-lite"  # Primary Hive AI model (e.g., gemini/gemini-2.5-flash-lite, openai/gpt-4)
+  hiveWeakModel: ""  # Fallback/weak model for cost optimization
+  hiveOllamaNumCtx: ""  # Ollama context window size (if using Ollama)
+  
+  # Python runtime configuration
+  pythonpath: "/app"  # Python module search path
+  pythonunbuffered: "1"  # Disable Python output buffering
+  
+  # Email configuration
+  emailProvider: "smtp"  # Email provider: smtp, sendgrid, or mailchimp
+  smtpHost: ""  # SMTP server hostname
+  smtpPort: "587"  # SMTP server port
+  smtpUser: ""  # SMTP username
+  smtpFrom: ""  # Email sender address
+  smtpFromName: "CodeThreat AppSec"  # Email sender name
+  smtpTls: "true"  # Enable SMTP TLS
+  smtpRejectUnauthorized: "true"  # Reject unauthorized SSL certificates
+  smtpCiphers: "SSLv3"  # SMTP cipher suite
+  
+  # Runtime configuration
+  containerRuntimeEnvReplacement: "true"  # Enable runtime environment variable replacement
+  nodeTlsRejectUnauthorized: "1"  # Node.js TLS certificate validation
+  nodeUseEnvProxy: "1"  # Use environment proxy settings
+  
+  # Proxy configuration
+  httpProxy: ""  # HTTP proxy URL
+  httpsProxy: ""  # HTTPS proxy URL
+  http_proxy: ""  # HTTP proxy URL (lowercase, for compatibility)
+  https_proxy: ""  # HTTPS proxy URL (lowercase, for compatibility)
+  noProxy: ""  # Comma-separated list of hosts to bypass proxy
+  no_proxy: ""  # Comma-separated list of hosts to bypass proxy (lowercase)
+  
+  # Analytics and telemetry
+  posthogOptOut: "true"  # Opt out of PostHog analytics
+  
+  # File upload configuration
+  uploadFilePath: "/tmp/uploads"  # File upload directory path
+  
+  # Webhook secrets
+  bitbucketServerWebhookSecret: ""  # Bitbucket Server webhook secret (generate with: openssl rand -base64 32)
+
+# Database migration job configuration
+
+migrations:
+  enabled: true
+  image:
+    repository: codethreat/codethreat-appsec-poc
+    tag: latest

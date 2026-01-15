@@ -1,0 +1,18 @@
+{{- if and .Values.hive.enabled (ne .Values.hive.cache.storage.storageClass "-") }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "codethreat.fullname" . }}-hive-cache
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.componentLabels" (dict "component" "hive" "context" .) | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.hive.cache.storage.size }}
+  {{- if .Values.hive.cache.storage.storageClass }}
+  storageClassName: {{ .Values.hive.cache.storage.storageClass }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,46 @@
+# Helm
+*.tgz
+.helm/
+
+# Values files with secrets
+values-*.yaml
+!values-example.yaml
+*-values.yaml
+!*-example.yaml
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+
+# Secrets and tokens
+secrets.yaml
+secrets.yml
+*.secret
+*.key
+*.pem
+!*.example.pem
+
+# Test artifacts
+test-results/
+coverage/
+
+# Build artifacts
+dist/
+build/

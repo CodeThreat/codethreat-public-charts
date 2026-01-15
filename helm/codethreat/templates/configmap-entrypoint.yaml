@@ -1,0 +1,122 @@
+{{- if .Values.appsec.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "codethreat.fullname" . }}-entrypoint
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.labels" . | nindent 4 }}
+data:
+  docker-entrypoint.sh: |
+    #!/bin/sh
+    # CodeThreat Docker Entrypoint
+    # Handles database migrations and application startup
+    
+    set -e
+    
+    # Color codes for output
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m' # No Color
+    
+    echo "${BLUE}🚀 CodeThreat AppSec Platform Starting...${NC}"
+    
+    # Function to wait for database to be ready
+    wait_for_database() {
+        echo "${YELLOW}⏳ Waiting for database to be ready...${NC}"
+        
+        local max_attempts=30
+        local attempt=1
+        
+        while [ $attempt -le $max_attempts ]; do
+            if npx prisma db execute --stdin <<< "SELECT 1;" > /dev/null 2>&1; then
+                echo "${GREEN}✅ Database is ready${NC}"
+                return 0
+            fi
+            
+            echo "${YELLOW}⏳ Database not ready yet (attempt $attempt/$max_attempts)...${NC}"
+            sleep 2
+            attempt=$((attempt + 1))
+        done
+        
+        echo "${RED}❌ Database failed to become ready after $max_attempts attempts${NC}"
+        return 1
+    }
+    
+    # Function to run database migrations
+    run_migrations() {
+        echo "${YELLOW}🗄️  Running database migrations...${NC}"
+        
+        # Generate Prisma client first
+        echo "${YELLOW}📦 Generating Prisma client...${NC}"
+        npx prisma generate
+        
+        # Check migration status
+        echo "${YELLOW}📊 Checking migration status...${NC}"
+        if npx prisma migrate status > /dev/null 2>&1; then
+            echo "${GREEN}✅ Migration status check passed${NC}"
+        else
+            echo "${YELLOW}⚠️  Migration status check failed; attempting migration deploy${NC}"
+        fi
+        
+        echo "${YELLOW}🔄 Deploying migrations...${NC}"
+        npx prisma migrate deploy
+        echo "${GREEN}✅ Database migrations completed successfully${NC}"
+    }
+    
+    # Run database setup (migrations are handled by Helm job, but we can check)
+    if [ "${SKIP_DB_MIGRATIONS:-false}" != "true" ]; then
+        wait_for_database
+        if ! run_migrations; then
+            echo "${RED}❌ Database migration step failed${NC}"
+            exit 1
+        fi
+        
+        echo "${YELLOW}🌱 Running database seed...${NC}"
+        if npx prisma db seed >/dev/null 2>&1; then
+            echo "${GREEN}✅ Database seed completed${NC}"
+        else
+            echo "${YELLOW}⚠️  Database seed failed or already applied; continuing${NC}"
+        fi
+    else
+        echo "${BLUE}ℹ️  Skipping database migrations (handled by Helm job)${NC}"
+    fi
+    
+    # Start the application
+    echo "${GREEN}🚀 Starting CodeThreat AppSec Platform...${NC}"
+    
+    # Ensure uploads directory exists and is writable
+    UPLOAD_DIR="${UPLOAD_FILE_PATH:-/tmp/uploads}"
+    if [ ! -d "$UPLOAD_DIR" ]; then
+        echo "${YELLOW}📂 Creating uploads directory at $UPLOAD_DIR${NC}"
+        mkdir -p "$UPLOAD_DIR" || echo "${RED}❌ Failed to create $UPLOAD_DIR${NC}"
+    fi
+    
+    # If running as root, fix ownership/permissions of uploads dir and drop privileges
+    if [ "$(id -u)" = "0" ]; then
+        echo "${YELLOW}🔐 Adjusting permissions for $UPLOAD_DIR and dropping privileges...${NC}"
+        TARGET_USER="nextjs"
+        TARGET_GROUP="nodejs"
+        if ! id -u "$TARGET_USER" >/dev/null 2>&1; then
+            TARGET_USER="1001"
+        fi
+        if ! getent group "$TARGET_GROUP" >/dev/null 2>&1; then
+            TARGET_GROUP="1001"
+        fi
+        
+        chown -R "$TARGET_USER":"$TARGET_GROUP" "$UPLOAD_DIR" 2>/dev/null || true
+        chmod -R 0775 "$UPLOAD_DIR" 2>/dev/null || true
+        
+        if command -v su >/dev/null 2>&1; then
+            exec su -s /bin/sh -c "$*" "$TARGET_USER"
+        else
+            echo "${YELLOW}⚠️  'su' not found; running command as root (less secure)${NC}"
+            exec "$@"
+        fi
+    else
+        chmod -R 0775 "$UPLOAD_DIR" 2>/dev/null || true
+        exec "$@"
+    fi
+{{- end }}

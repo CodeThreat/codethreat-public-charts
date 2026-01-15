@@ -1,0 +1,37 @@
+{{- if and .Values.shiftql.enabled (ne .Values.shiftql.scanCache.storage.storageClass "-") }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "codethreat.fullname" . }}-shiftql-cache
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.componentLabels" (dict "component" "shiftql" "context" .) | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.shiftql.scanCache.storage.size }}
+  {{- if .Values.shiftql.scanCache.storage.storageClass }}
+  storageClassName: {{ .Values.shiftql.scanCache.storage.storageClass }}
+  {{- end }}
+---
+{{- end }}
+{{- if and .Values.shiftql.enabled (ne .Values.shiftql.scanTemp.storage.storageClass "-") }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "codethreat.fullname" . }}-shiftql-temp
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.componentLabels" (dict "component" "shiftql" "context" .) | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.shiftql.scanTemp.storage.size }}
+  {{- if .Values.shiftql.scanTemp.storage.storageClass }}
+  storageClassName: {{ .Values.shiftql.scanTemp.storage.storageClass }}
+  {{- end }}
+{{- end }}

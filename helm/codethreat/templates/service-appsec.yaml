@@ -1,0 +1,19 @@
+{{- if .Values.appsec.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "codethreat.fullname" . }}-appsec
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.componentLabels" (dict "component" "appsec" "context" .) | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "codethreat.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: appsec
+{{- end }}

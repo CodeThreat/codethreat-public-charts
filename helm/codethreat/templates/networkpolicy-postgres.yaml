@@ -1,0 +1,25 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "codethreat.fullname" . }}-postgres-restricted
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "codethreat.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ include "codethreat.name" . }}
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - protocol: TCP
+          port: 5432
+{{- end }}

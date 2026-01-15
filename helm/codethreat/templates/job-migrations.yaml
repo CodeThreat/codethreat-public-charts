@@ -1,0 +1,72 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "codethreat.fullname" . }}-migrations
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "codethreat.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migrations
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrations
+          image: {{ include "codethreat.image" (dict "repository" .Values.migrations.image.repository "tag" .Values.migrations.image.tag "context" $) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              set -e
+              echo "Waiting for PostgreSQL to be ready..."
+              until pg_isready -h {{ include "codethreat.postgresService" . }} -U {{ .Values.postgresql.username }} -d postgres; do
+                echo "PostgreSQL is not ready yet. Waiting..."
+                sleep 2
+              done
+              echo "PostgreSQL is ready."
+              cd /app
+              echo "Ensuring database exists..."
+              DB_NAME="{{ .Values.postgresql.database }}"
+              SERVER_URL="postgresql://{{ .Values.postgresql.username }}:$$POSTGRES_PASSWORD@{{ include "codethreat.postgresService" . }}:5432/postgres"
+              SQL="DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$$DB_NAME') THEN EXECUTE 'CREATE DATABASE $$DB_NAME'; END IF; END \$\$;"
+              echo "$$SQL" | npx prisma db execute --url "$$SERVER_URL" --stdin || echo "Database creation check completed"
+              echo "Generating Prisma client..."
+              npx prisma generate --schema /app/prisma/schema.prisma
+              echo "Deploying migrations..."
+              npx prisma migrate deploy --schema /app/prisma/schema.prisma
+              echo "Running database seed..."
+              npx prisma db seed --schema /app/prisma/schema.prisma || echo "Seed completed or already applied"
+              echo "Migrations completed successfully"
+          envFrom:
+            - secretRef:
+                name: {{ include "codethreat.fullname" . }}-secrets
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "codethreat.fullname" . }}-secrets
+                  key: DATABASE_URL
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.secrets.postgresPassword | quote }}
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2
+              memory: 2Gi
+      {{- if .Values.imagePullSecrets.token }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name }}
+      {{- end }}
+{{- end }}

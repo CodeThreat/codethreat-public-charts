@@ -1,0 +1,18 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "codethreat.fullname" . }}-postgres-data
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.componentLabels" (dict "component" "postgres" "context" .) | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.postgresql.storage.size }}
+  {{- if .Values.postgresql.storage.storageClass }}
+  storageClassName: {{ .Values.postgresql.storage.storageClass }}
+  {{- end }}
+{{- end }}

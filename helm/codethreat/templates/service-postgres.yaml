@@ -1,0 +1,19 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "codethreat.postgresService" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.componentLabels" (dict "component" "postgres" "context" .) | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: postgres
+      protocol: TCP
+      name: postgres
+  selector:
+    {{- include "codethreat.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+{{- end }}

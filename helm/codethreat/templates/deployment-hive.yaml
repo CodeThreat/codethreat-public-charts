@@ -1,0 +1,54 @@
+{{- if .Values.hive.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "codethreat.fullname" . }}-hive
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.componentLabels" (dict "component" "hive" "context" .) | nindent 4 }}
+spec:
+  replicas: {{ .Values.hive.replicas }}
+  selector:
+    matchLabels:
+      {{- include "codethreat.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: hive
+  template:
+    metadata:
+      labels:
+        {{- include "codethreat.componentLabels" (dict "component" "hive" "context" .) | nindent 8 }}
+    spec:
+      containers:
+        - name: hive
+          image: {{ include "codethreat.image" (dict "repository" .Values.hive.image.repository "tag" .Values.hive.image.tag "context" $) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "codethreat.fullname" . }}-config
+            - secretRef:
+                name: {{ include "codethreat.fullname" . }}-secrets
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "codethreat.fullname" . }}-secrets
+                  key: DATABASE_URL
+          volumeMounts:
+            - name: hive-cache
+              mountPath: /tmp/hive-cache
+          resources:
+            {{- toYaml .Values.hive.resources | nindent 12 }}
+          # Health checks removed - worker service doesn't expose HTTP endpoints
+          # Kubernetes will restart the container if it crashes
+      volumes:
+        - name: hive-cache
+          {{- if ne .Values.hive.cache.storage.storageClass "-" }}
+          persistentVolumeClaim:
+            claimName: {{ include "codethreat.fullname" . }}-hive-cache
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- if .Values.imagePullSecrets.token }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name }}
+      {{- end }}
+{{- end }}
