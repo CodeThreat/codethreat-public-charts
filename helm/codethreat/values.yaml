@@ -91,13 +91,14 @@ hive:
 
 ingress:
   enabled: false  # Set to true if you have an ingress controller installed
-  className: nginx
+  className: ""  # Leave empty for GKE Ingress, or set to "nginx" for nginx-ingress
   host: codethreat.example.com
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "500m"
   tls:
     enabled: false
     secretName: ""
+    managedCertificate: false  # Set to true for GKE Google-managed SSL certificates
 
 # Sensitive configuration values (stored in Kubernetes Secrets)
 secrets:

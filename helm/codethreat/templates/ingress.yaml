@@ -1,4 +1,18 @@
 {{- if and .Values.appsec.enabled .Values.ingress.enabled }}
+{{- if .Values.ingress.tls.managedCertificate }}
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: {{ include "codethreat.fullname" . }}-appsec-cert
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "codethreat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: appsec
+spec:
+  domains:
+    - {{ .Values.ingress.host }}
+---
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -6,15 +20,18 @@ metadata:
   namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "codethreat.componentLabels" (dict "component" "appsec" "context" .) | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
   annotations:
+    {{- if .Values.ingress.tls.managedCertificate }}
+    networking.gke.io/managed-certificates: {{ include "codethreat.fullname" . }}-appsec-cert
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
-  {{- if .Values.ingress.tls.enabled }}
+  {{- if and .Values.ingress.tls.enabled (not .Values.ingress.tls.managedCertificate) }}
   tls:
     - hosts:
         - {{ .Values.ingress.host }}

@@ -32,9 +32,12 @@ spec:
               value: {{ .Values.postgresql.username | quote }}
             - name: POSTGRES_PASSWORD
               value: {{ .Values.secrets.postgresPassword | quote }}
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
+              subPath: pgdata
           resources:
             {{- toYaml .Values.postgresql.resources | nindent 12 }}
           livenessProbe:

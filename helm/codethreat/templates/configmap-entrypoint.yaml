@@ -23,15 +23,19 @@ data:
     
     echo "${BLUE}🚀 CodeThreat AppSec Platform Starting...${NC}"
     
+    # Change to app directory where Prisma schema is located
+    cd /app || { echo "${RED}❌ Failed to change to /app directory${NC}"; exit 1; }
+    
     # Function to wait for database to be ready
     wait_for_database() {
         echo "${YELLOW}⏳ Waiting for database to be ready...${NC}"
         
         local max_attempts=30
         local attempt=1
+        local schema_path="/app/prisma/schema.prisma"
         
         while [ $attempt -le $max_attempts ]; do
-            if npx prisma db execute --stdin <<< "SELECT 1;" > /dev/null 2>&1; then
+            if echo "SELECT 1;" | npx prisma db execute --stdin --schema "$schema_path" > /dev/null 2>&1; then
                 echo "${GREEN}✅ Database is ready${NC}"
                 return 0
             fi
@@ -42,6 +46,12 @@ data:
         done
         
         echo "${RED}❌ Database failed to become ready after $max_attempts attempts${NC}"
+        echo "${YELLOW}⚠️  Attempting to show last error (schema check)...${NC}"
+        if [ ! -f "$schema_path" ]; then
+            echo "${RED}❌ Schema file not found at $schema_path${NC}"
+            echo "${YELLOW}Checking for schema in current directory...${NC}"
+            find . -name "schema.prisma" -type f 2>/dev/null | head -5 || echo "No schema.prisma found"
+        fi
         return 1
     }
     
@@ -49,20 +59,22 @@ data:
     run_migrations() {
         echo "${YELLOW}🗄️  Running database migrations...${NC}"
         
+        local schema_path="/app/prisma/schema.prisma"
+        
         # Generate Prisma client first
         echo "${YELLOW}📦 Generating Prisma client...${NC}"
-        npx prisma generate
+        npx prisma generate --schema "$schema_path"
         
         # Check migration status
         echo "${YELLOW}📊 Checking migration status...${NC}"
-        if npx prisma migrate status > /dev/null 2>&1; then
+        if npx prisma migrate status --schema "$schema_path" > /dev/null 2>&1; then
             echo "${GREEN}✅ Migration status check passed${NC}"
         else
             echo "${YELLOW}⚠️  Migration status check failed; attempting migration deploy${NC}"
         fi
         
         echo "${YELLOW}🔄 Deploying migrations...${NC}"
-        npx prisma migrate deploy
+        npx prisma migrate deploy --schema "$schema_path"
         echo "${GREEN}✅ Database migrations completed successfully${NC}"
     }
     
@@ -75,7 +87,7 @@ data:
         fi
         
         echo "${YELLOW}🌱 Running database seed...${NC}"
-        if npx prisma db seed >/dev/null 2>&1; then
+        if npx prisma db seed --schema /app/prisma/schema.prisma >/dev/null 2>&1; then
             echo "${GREEN}✅ Database seed completed${NC}"
         else
             echo "${YELLOW}⚠️  Database seed failed or already applied; continuing${NC}"
@@ -110,13 +122,26 @@ data:
         chmod -R 0775 "$UPLOAD_DIR" 2>/dev/null || true
         
         if command -v su >/dev/null 2>&1; then
-            exec su -s /bin/sh -c "$*" "$TARGET_USER"
+            if [ "$1" = "next" ] && [ "$2" = "start" ]; then
+                exec su -s /bin/sh -c "cd /app && npx next start" "$TARGET_USER"
+            elif [ "$1" = "next" ]; then
+                shift
+                exec su -s /bin/sh -c "cd /app && npx next $*" "$TARGET_USER"
+            else
+                exec su -s /bin/sh -c "cd /app && $*" "$TARGET_USER"
+            fi
         else
             echo "${YELLOW}⚠️  'su' not found; running command as root (less secure)${NC}"
-            exec "$@"
+            cd /app && exec "$@"
         fi
     else
         chmod -R 0775 "$UPLOAD_DIR" 2>/dev/null || true
-        exec "$@"
+        cd /app
+        if [ "$1" = "next" ]; then
+            shift
+            exec npx next "$@"
+        else
+            exec "$@"
+        fi
     fi
 {{- end }}
