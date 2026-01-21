@@ -20,7 +20,7 @@ spec:
       containers:
         - name: appsec
           image: {{ include "codethreat.image" (dict "repository" .Values.appsec.image.repository "tag" .Values.appsec.image.tag "context" $) }}
-          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          imagePullPolicy: {{ .Values.appsec.imagePullPolicy | default .Values.global.imagePullPolicy | default "IfNotPresent" }}
           # Use entrypoint script for runtime NEXT_PUBLIC_* variable replacement
           # The script performs sed replacement in built .next files since Next.js bakes these at build time
           command: ["/bin/sh", "/opt/ct/docker-entrypoint.sh"]

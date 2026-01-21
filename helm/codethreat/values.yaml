@@ -34,6 +34,7 @@ appsec:
   image:
     repository: codethreat/codethreat-appsec-poc
     tag: latest
+  imagePullPolicy: Always
   replicas: 1
   resources:
     requests:
